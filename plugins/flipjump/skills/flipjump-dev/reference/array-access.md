@@ -106,8 +106,7 @@ pointer/memory macros are the well-trodden, heavily-tested path.)
 
 `hex.ptr_add ptr, k` takes a **constant** `k`, so you can't `ptr_add` by a runtime
 index directly. Use the **indexed (nth) pointer macros** — they compute the address in
-O(w) (not O(i)) and work for negative `i` too. (These postdate the 1.3.0 PyPI release and aren't
-on fjdocs — reference is the GitHub source; install from git main per SKILL.md "Required setup".)
+O(w) (not O(i)) and work for negative `i` too:
 
 | Purpose | Macro |
 |---|---|

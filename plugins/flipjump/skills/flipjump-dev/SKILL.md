@@ -17,12 +17,6 @@ pip install flipjump
 
 `fj` is on `PATH` after install. Every command in this skill uses that script.
 
-> **Version note:** some STL macros this skill references postdate the 1.3.0 (Jan 2025) PyPI release — the hex decimal readers/printers (`hex.input_dec_*`, `hex.print_dec_*`), `hex.min`/`hex.max`/`hex.scmp`, `hex.mul10`, the indexed-pointer family (`hex.ptr_index`, `read_nth_*`/`write_nth_*`), and the line-buffer macros in `hex/strings.fj`. If one of them doesn't resolve and `pip install -U flipjump` doesn't fix it, the latest release still predates it — install from git main:
->
-> ```bash
-> pip install -U "flipjump @ git+https://github.com/tomhea/flip-jump"
-> ```
-
 ## A complete runnable program
 
 Verified by compiling and running. Use this as the orientation pattern; adapt by changing the body, not the skeleton.
@@ -189,6 +183,7 @@ use it; don't reinvent. The entries below are the ones most often missed:
   ```
   The variable lives at top level below `stl.loop` (`ch: bit.vec 8, 0`) and any enclosing `def` references it via `< ch`. To transform each byte (e.g. case-flip), mutate `ch` between the `bit.input` and `bit.print` — see the `*dw` bit-stride note in "Memory model". (Per "Bit vs hex", prefer the hex form for new code: `hex.input ch` into a `hex.vec 2`, `hex.if0 2, ch, done`, `hex.print ch`, with `stl.startup_and_init_all`.)
 - **Reading to true EOF terminates the run before your check fires** — `hex.input`/`bit.input` past the end of input ends the program (cause `EOF`), so a loop that only stops on a sentinel you *read* must actually receive that sentinel. Two safe shapes: stop on a known terminator already in the data (`'\n'`), **or** make the driver append a `\0` byte so the loop's `if0`/EOF-check fires on a real read. A program that scans to end-of-input (no `'\n'` stop) needs that trailing `\0` in its input, or it halts with no output.
+- **Function calls — two mechanisms; pick by reentrancy.** `stl.fcall label, ret_reg` + `stl.fret ret_reg` save the return address in a *register you declare* (`ret: 0;0` below `stl.loop` — a spare FJ op whose jump-word `fcall` wflips) — nearly free (complexity `@-1` / `1`), no stack required: the default for plain helpers. The catch: one `ret_reg` holds ONE return address, so a function that calls itself clobbers it — every nesting level needs its own `ret_reg`, and recursion is out. For recursion (or call depth you can't bound while writing), use the stack pair `stl.call address` / `stl.return` — ~`2.5w@` per call, `@requires stl.stack_init` (bundled in `stl.startup_and_init_all` with a default size of 100; pass a bigger `stack_bit_size` for deep recursion). The `stl.call address, params_stack_length` arity also pops that many parameter cells you `hex.push`ed on return. Signatures + costs: `/stl/ptrlib.html`.
 - **Halt the program** — `stl.loop`. Equivalent to `;$-dw`.
 
 ## Things that are easy to misread in FlipJump source
@@ -302,7 +297,7 @@ If either fails, change the program and rerun. The reason "compiled successfully
 - **Assemble with `--werror`**: `fj --asm program.fj -o out.fjm -w 64 --werror`. It promotes the cheap static warnings into hard errors the (fast) assembler catches *now* instead of at run/test time — an inner label used but missing from a macro's `@` clause, an *unused* `@` label, or a global referenced but absent from its `<` clause. (Authoring rule this enforces: every inner label goes in the macro's `@` clause; every external data label it references goes in the `<` clause.)
 - **Compare output byte-for-byte, and don't trust a shell pipe on Windows** — `echo x | fj` injects CRLF and silently breaks the comparison. Drive the program from Python and compare raw bytes. The one-call form is `flipjump.assemble_and_run_test_output([Path('p.fj')], in_bytes, out_bytes, warning_as_errors=True, should_raise_assertion_error=False)` — it does compile(`--werror`) + run + byte-check and returns a bool, so a tight loop over many inputs needs no temp `.fjm` files (compile once with `flipjump.assemble(...)` + `flipjump.run_test_output(fjm, …)` if you want to reuse the binary). A ready-made harness is [`reference/fj_verify.py`](reference/fj_verify.py); the emit-and-verify loop is in [`reference/authoring-harness.md`](reference/authoring-harness.md).
 - **An old/stale `flipjump` install lags the published macros.** If `fj` / `import flipjump` report that a macro *or a sub-macro it expands to* "isn't defined" (e.g. an older `bit.mul` calling a `mul.mul_add_if` helper its own `mul.fj` doesn't contain), or behavior matches an old version, your installed `flipjump` is behind the docs — **`pip install -U flipjump`**, and confirm the location with `python -c "import flipjump; print(flipjump.__file__)"`. (If you're developing flipjump itself from a clone rather than just using it, `pip install -e .` from the clone root makes `fj`/`import flipjump` resolve to your live working tree — STL `.fj` files included — so edits take effect with no reinstall.)
-  - **Don't hand-roll a replacement for a macro that "doesn't resolve."** If fjdocs (or the upstream STL source on GitHub) clearly defines the macro, a resolve/runtime failure is almost always a stale install, not a real gap — upgrade the install, don't reinvent the macro. (Macros that have specifically tripped this: `bit.mul` and its inner `mul.mul_add_if`; the `hex.input_dec_uint/int` decimal readers and `hex.mul10` / `hex.min` / `hex.max`. All present and correct on git main — but note several postdate the 1.3.0 PyPI release, so `pip install -U flipjump` alone may not be enough; see the version note in "Required setup".)
+  - **Don't hand-roll a replacement for a macro that "doesn't resolve."** If fjdocs (or your installed STL source) clearly defines the macro, a resolve/runtime failure is almost always a stale install, not a real gap — upgrade the install, don't reinvent the macro. (Macros that have specifically tripped this on a behind-the-release install: `bit.mul` and its inner `mul.mul_add_if`; the `hex.input_dec_uint/int` decimal readers and `hex.mul10` / `hex.min` / `hex.max`. All present and correct in current releases.)
 
 ## Where to find authoritative reference
 
@@ -311,8 +306,6 @@ Don't rely on memory for exact macro signatures — they're easy to get subtly w
 **Primary**: https://fjdocs.tomhe.app — the rendered, navigable documentation site. Prefer it for everything.
 
 **Fallback** (only when fjdocs is unreachable): the upstream source at https://github.com/tomhea/flip-jump/tree/main/flipjump/stl.
-
-**Exception — newest macros**: a few macros aren't rendered on fjdocs yet (`hex.scmp`, the indexed-pointer `hex.ptr_index` / `read_nth_*` / `write_nth_*` family, and everything in `hex/strings.fj`). For those, the upstream source IS the reference — read the macro's `def` and doc-comment on GitHub.
 
 Common routing (full map in [`reference/docs-map.md`](reference/docs-map.md)):
 
@@ -326,7 +319,7 @@ Common routing (full map in [`reference/docs-map.md`](reference/docs-map.md)):
 | A cookbook recipe for task X | `/cookbook/index.html`. |
 | Concept overview (e.g. how table dispatch works) | `/reference/how-the-stl-works.html`. |
 | Program structure, startup, halt | `/getting-started/anatomy.html`. |
-| Function calls / recursion (`stl.fcall`/`fret`, `stl.call`/`return`, stack `push`/`pop`) | `/stl/ptrlib.html` + `/stl/hex/pointers/stack.html` (stack size: the `stl.startup_and_init_all` default is 100 — pass a bigger `stack_bit_size` for deep recursion). |
+| Function calls / recursion | `/stl/ptrlib.html` (mechanism comparison in "Idioms that work" below) + `/stl/hex/pointers/stack.html` for raw stack ops. |
 
 For tool details (assembling, running, debugging, plus the testing infrastructure for contributing to flipjump), see [`reference/fj-tool.md`](reference/fj-tool.md).
 

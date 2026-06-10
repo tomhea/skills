@@ -1,6 +1,6 @@
 {
   "name": "flipjump",
-  "version": "1.0.1",
+  "version": "1.0.0",
   "description": "Write FlipJump programs — correct, efficient, and tested. Knows the STL's macros and idioms, the gotchas, and verifies every program through the fj toolchain.",
   "author": { "name": "Tom", "url": "https://github.com/tomhea" },
   "license": "MIT"
