@@ -1,4 +1,4 @@
-# tomhea-skills
+# tomhe
 
 A [Claude Code plugin marketplace](https://code.claude.com/docs/en/plugin-marketplaces) for Tom's skills.
 
@@ -6,7 +6,7 @@ A [Claude Code plugin marketplace](https://code.claude.com/docs/en/plugin-market
 
 ```
 /plugin marketplace add tomhea/skills
-/plugin install flipjump@tomhea-skills
+/plugin install flipjump@tomhe
 ```
 
 ## Plugins
@@ -25,4 +25,4 @@ Requires `pip install flipjump` (puts `fj` on `PATH`).
 
 ## License
 
-[BSD 2-Clause](LICENSE)
+[MIT](LICENSE)
