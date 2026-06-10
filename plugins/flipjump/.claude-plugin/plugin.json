@@ -1,0 +1,7 @@
+{
+  "name": "flipjump",
+  "version": "0.1.0",
+  "description": "FlipJump authoring: writing correct, efficient, well-tested FlipJump programs",
+  "author": { "name": "Tom", "url": "https://github.com/tomhea" },
+  "license": "BSD-2-Clause"
+}

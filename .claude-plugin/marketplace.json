@@ -1,0 +1,12 @@
+{
+  "name": "tomhea-skills",
+  "owner": { "name": "Tom", "url": "https://github.com/tomhea" },
+  "description": "Tom's Claude Code skills — FlipJump esolang development",
+  "plugins": [
+    {
+      "name": "flipjump",
+      "source": "./plugins/flipjump",
+      "description": "Write and reason about FlipJump, the single-instruction esolang, and its STL"
+    }
+  ]
+}
