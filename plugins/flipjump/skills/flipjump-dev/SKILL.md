@@ -17,6 +17,12 @@ pip install flipjump
 
 `fj` is on `PATH` after install. Every command in this skill uses that script.
 
+> **Version note:** some STL macros this skill references postdate the 1.3.0 (Jan 2025) PyPI release — the hex decimal readers/printers (`hex.input_dec_*`, `hex.print_dec_*`), `hex.min`/`hex.max`/`hex.scmp`, `hex.mul10`, the indexed-pointer family (`hex.ptr_index`, `read_nth_*`/`write_nth_*`), and the line-buffer macros in `hex/strings.fj`. If one of them doesn't resolve and `pip install -U flipjump` doesn't fix it, the latest release still predates it — install from git main:
+>
+> ```bash
+> pip install -U "flipjump @ git+https://github.com/tomhea/flip-jump"
+> ```
+
 ## A complete runnable program
 
 Verified by compiling and running. Use this as the orientation pattern; adapt by changing the body, not the skeleton.
@@ -273,8 +279,8 @@ Syntax traps with confusing error messages:
 
 - **"label not found" / "undefined symbol" at macro-resolve phase** → you used a `hex.*` op (or a pointer/memory op) without its init. Fix by switching `stl.startup` to `stl.startup_and_init_all` (covers `hex.init` + `stl.ptr_init` + the stack).
 - **Program runs forever (no `Finished by looping...` line)** → either you forgot `stl.loop` at the end of your code, or a data declaration ended up above it and is being executed as instructions. Move data below `stl.loop`.
-- **`Finished by ip<2w`, or `runtime-memory-error` at a giant address (bit 63 set)** → a `wflip`/jump resolved to garbage. The usual cause is an uninitialized or non-`dw`-aligned pointer. (Naming a label after a machine constant — see "Naming trap" above — used to crash this way too, but the compiler now rejects it at parse time.) Re-run with `fj -d labels.txt program.fj` and read the *deepest* macro on the last-executed ops — it points at where execution went wrong (details in `reference/fj-tool.md`).
-- **Program doesn't halt and the cause isn't obvious** → same `fj -d labels.txt program.fj` workflow: the verbose label names show which macro ran past where it should have stopped.
+- **`Finished by ip<2w`, or `runtime-memory-error` at a giant address (bit 63 set)** → a `wflip`/jump resolved to garbage. The usual cause is an uninitialized or non-`dw`-aligned pointer. (Naming a label after a machine constant — see "Naming trap" above — used to crash this way too, but the compiler now rejects it at parse time.) Re-run with `fj -d program.fj` (no path needed — a temp debug file is used) and read the *deepest* macro in the macro-stack label names `fj` prints for the last-executed ops — it points at where execution went wrong (details in `reference/fj-tool.md`).
+- **Program doesn't halt and the cause isn't obvious** → same `fj -d program.fj` workflow: the verbose label names in the printed trace show which macro ran past where it should have stopped.
 
 ## Verification workflow — the loop
 
@@ -296,7 +302,7 @@ If either fails, change the program and rerun. The reason "compiled successfully
 - **Assemble with `--werror`**: `fj --asm program.fj -o out.fjm -w 64 --werror`. It promotes the cheap static warnings into hard errors the (fast) assembler catches *now* instead of at run/test time — an inner label used but missing from a macro's `@` clause, an *unused* `@` label, or a global referenced but absent from its `<` clause. (Authoring rule this enforces: every inner label goes in the macro's `@` clause; every external data label it references goes in the `<` clause.)
 - **Compare output byte-for-byte, and don't trust a shell pipe on Windows** — `echo x | fj` injects CRLF and silently breaks the comparison. Drive the program from Python and compare raw bytes. The one-call form is `flipjump.assemble_and_run_test_output([Path('p.fj')], in_bytes, out_bytes, warning_as_errors=True, should_raise_assertion_error=False)` — it does compile(`--werror`) + run + byte-check and returns a bool, so a tight loop over many inputs needs no temp `.fjm` files (compile once with `flipjump.assemble(...)` + `flipjump.run_test_output(fjm, …)` if you want to reuse the binary). A ready-made harness is [`reference/fj_verify.py`](reference/fj_verify.py); the emit-and-verify loop is in [`reference/authoring-harness.md`](reference/authoring-harness.md).
 - **An old/stale `flipjump` install lags the published macros.** If `fj` / `import flipjump` report that a macro *or a sub-macro it expands to* "isn't defined" (e.g. an older `bit.mul` calling a `mul.mul_add_if` helper its own `mul.fj` doesn't contain), or behavior matches an old version, your installed `flipjump` is behind the docs — **`pip install -U flipjump`**, and confirm the location with `python -c "import flipjump; print(flipjump.__file__)"`. (If you're developing flipjump itself from a clone rather than just using it, `pip install -e .` from the clone root makes `fj`/`import flipjump` resolve to your live working tree — STL `.fj` files included — so edits take effect with no reinstall.)
-  - **Don't hand-roll a replacement for a macro that "doesn't resolve."** If fjdocs (or your installed STL source) clearly defines the macro, a resolve/runtime failure is almost always a stale install, not a real gap — upgrade the install, don't reinvent the macro. (Macros that have specifically tripped this on a behind-the-release install: `bit.mul` and its inner `mul.mul_add_if`; the `hex.input_dec_uint/int` decimal readers and `hex.mul10` / `hex.min` / `hex.max`; and the `hex.input_dec_*` "repeat" bug where a hex var named `d`/`i` collided with a truth-table loop var. All present and correct in current releases.)
+  - **Don't hand-roll a replacement for a macro that "doesn't resolve."** If fjdocs (or the upstream STL source on GitHub) clearly defines the macro, a resolve/runtime failure is almost always a stale install, not a real gap — upgrade the install, don't reinvent the macro. (Macros that have specifically tripped this: `bit.mul` and its inner `mul.mul_add_if`; the `hex.input_dec_uint/int` decimal readers and `hex.mul10` / `hex.min` / `hex.max`. All present and correct on git main — but note several postdate the 1.3.0 PyPI release, so `pip install -U flipjump` alone may not be enough; see the version note in "Required setup".)
 
 ## Where to find authoritative reference
 
@@ -305,6 +311,8 @@ Don't rely on memory for exact macro signatures — they're easy to get subtly w
 **Primary**: https://fjdocs.tomhe.app — the rendered, navigable documentation site. Prefer it for everything.
 
 **Fallback** (only when fjdocs is unreachable): the upstream source at https://github.com/tomhea/flip-jump/tree/main/flipjump/stl.
+
+**Exception — newest macros**: a few macros aren't rendered on fjdocs yet (`hex.scmp`, the indexed-pointer `hex.ptr_index` / `read_nth_*` / `write_nth_*` family, and everything in `hex/strings.fj`). For those, the upstream source IS the reference — read the macro's `def` and doc-comment on GitHub.
 
 Common routing (full map in [`reference/docs-map.md`](reference/docs-map.md)):
 
@@ -318,6 +326,7 @@ Common routing (full map in [`reference/docs-map.md`](reference/docs-map.md)):
 | A cookbook recipe for task X | `/cookbook/index.html`. |
 | Concept overview (e.g. how table dispatch works) | `/reference/how-the-stl-works.html`. |
 | Program structure, startup, halt | `/getting-started/anatomy.html`. |
+| Function calls / recursion (`stl.fcall`/`fret`, `stl.call`/`return`, stack `push`/`pop`) | `/stl/ptrlib.html` + `/stl/hex/pointers/stack.html` (stack size: the `stl.startup_and_init_all` default is 100 — pass a bigger `stack_bit_size` for deep recursion). |
 
 For tool details (assembling, running, debugging, plus the testing infrastructure for contributing to flipjump), see [`reference/fj-tool.md`](reference/fj-tool.md).
 

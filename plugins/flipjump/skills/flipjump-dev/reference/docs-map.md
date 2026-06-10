@@ -18,6 +18,8 @@ For each section: the fjdocs URL (prefer this), the corresponding upstream STL p
 
 URL base: `https://fjdocs.tomhe.app`. GitHub base: `https://github.com/tomhea/flip-jump/tree/main`.
 
+> **Not on fjdocs yet** (use the GitHub source directly for these): `hex.scmp` (in `hex/cond_jumps.fj`), the indexed-pointer family `hex.ptr_index` / `read_nth_hex/byte` / `write_nth_hex/byte` (in `hex/pointers/`), and everything in `hex/strings.fj` (`input_ptr_line`, `print_ptr_text`, `print_ptr_line`). These also postdate the 1.3.0 PyPI release — see the version note in SKILL.md "Required setup".
+
 ## Getting started
 
 | fjdocs | GitHub | Answers |
@@ -98,6 +100,7 @@ Per-file pages (file = `.fj` source file). Notation: `/stl/<file>.html` = file p
 | `/stl/hex/input.html` | `flipjump/stl/hex/input.fj` | `input_hex`, `input` (1/n hex), `input_as_hex`. |
 | `/stl/hex/output.html` | `flipjump/stl/hex/output.fj` | `output`, `print`, `print_as_digit`, `print_uint`, `print_int`. |
 | `/stl/hex/tables_init.html` | `flipjump/stl/hex/tables_init.fj` | `hex.init`, `tables.init_shared`, `tables.init_all`, `clean_table_entry__table`, `jump_to_table_entry`. |
+| *(not on fjdocs yet)* | `flipjump/stl/hex/strings.fj` | `input_ptr_line`, `print_ptr_text`, `print_ptr_line` — the line-buffer macros. GitHub source is the only reference. |
 
 ### `hex/pointers/` subtree
 

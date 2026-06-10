@@ -28,7 +28,9 @@ stl.startup_and_init_all      // hex.init + ptr_init + stack — pointer/byte op
 ## Core helpers — now in the STL (`hex/strings.fj`)
 
 These three are part of the standard library, so **just call them** — they keep their own
-pointer / byte-register / counter scratch inline, so you declare only the buffer and a length:
+pointer / byte-register / counter scratch inline, so you declare only the buffer and a length.
+(They postdate the 1.3.0 PyPI release and aren't rendered on fjdocs — the reference is the GitHub
+source at `flipjump/stl/hex/strings.fj`; install from git main per SKILL.md "Required setup".)
 
 All three take a **pointer** to the buffer (a `hex.vec w/4` holding its address):
 
@@ -44,8 +46,8 @@ buffer (`hex.set hw, p, buf`) then call. `main`'s `<` clause lists every global 
 buffer, pointer, lengths). Each call keeps its own scratch, so reusing `p` for a second buffer is fine.
 
 If you need a custom variant (different terminator, transform-while-reading), the bodies are a
-straightforward read/write loop over the byte-pointer macros — read the `hex/strings.fj` source
-on fjdocs (`/stl/hex/strings.html`) and adapt it.
+straightforward read/write loop over the byte-pointer macros — read the source at
+https://github.com/tomhea/flip-jump/blob/main/flipjump/stl/hex/strings.fj and adapt it.
 
 ## Two-pointer compare (palindrome, prefix/suffix, substring search)
 

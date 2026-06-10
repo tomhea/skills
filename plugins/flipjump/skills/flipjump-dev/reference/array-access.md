@@ -106,7 +106,8 @@ pointer/memory macros are the well-trodden, heavily-tested path.)
 
 `hex.ptr_add ptr, k` takes a **constant** `k`, so you can't `ptr_add` by a runtime
 index directly. Use the **indexed (nth) pointer macros** — they compute the address in
-O(w) (not O(i)) and work for negative `i` too:
+O(w) (not O(i)) and work for negative `i` too. (These postdate the 1.3.0 PyPI release and aren't
+on fjdocs — reference is the GitHub source; install from git main per SKILL.md "Required setup".)
 
 | Purpose | Macro |
 |---|---|
@@ -163,7 +164,7 @@ when you do many of them:
   interpreter. Cut it: (a) **minimize indexed ops per iteration** — e.g. replace an
   indexed `seen[v]` array with a handful of dispatched `bit.bit`s / fixed registers when
   the index range is tiny; read sequential data with `read_byte_and_inc` (a cheap O(1)
-  walk) instead of `nth`; (b) **drop to `w=32`** (set the program's `word_size`) when the
+  walk) instead of `nth`; (b) **drop to `w=32`** (run with `-w 32`, or `memory_width=32` via the Python API) when the
   values fit — it halves every O(w) op for both compile and run.
 
 So: estimate `nth_count × w` before writing. If it's large, restructure (runtime loop,

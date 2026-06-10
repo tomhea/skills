@@ -45,26 +45,36 @@ Useful when you want to run the same program multiple times with different stdin
 
 ## Useful flags
 
+(Flag names verified against `fj --help` — note the underscores in the multi-word ones.)
+
 - `-w 64` — memory width in bits. Default `64`. Use `-w 16` or `-w 32` for tiny programs.
-- `--no-stl` — don't auto-include the standard library. Only for hand-written tests that deliberately avoid STL.
+- `--werror` — treat all assemble warnings as errors. Use it on every authoring compile; it's what catches `@`/`<` clause mistakes early (see SKILL.md "Verification workflow").
+- `-s` / `--silent` — suppress the assemble/run timing lines and run statistics (clean output for diffing).
+- `--no_stl` — don't auto-include the standard library. Only for hand-written tests that deliberately avoid STL.
+- `--no_output` — run without printing the program's stdout.
+- `-t` / `--trace` — print every executed opcode (very verbose; small programs only).
+- `--stats` — show macro code-size statistics after assembling (where your program-space goes).
 - `-h` / `--help` — full flag list.
 
 ## Feeding stdin
 
-stdin works directly:
+stdin works directly. Prefer redirecting from a file whose bytes you control:
 
 ```bash
-echo "hi" | fj program.fj
+fj program.fj < input.bin
 ```
+
+`echo "hi" | fj program.fj` also works on Unix shells — but NOT reliably on Windows, where the shell injects CRLF into the stream and silently breaks byte-exact behavior (see SKILL.md "Verification workflow"). When the exact bytes matter, write the input file from a script (or drive the run from Python via `reference/fj_verify.py`).
 
 Macros that read input (`bit.input_bit`, `bit.input`, `hex.input_hex`, `hex.input_as_hex`, etc.) read from stdin in the natural way.
 
 ## Debug flags (when output is wrong or the program doesn't halt)
 
 - (no flag) → on a failed run (program didn't halt via `stl.loop`), shows the last 10 executed addresses with short labels.
-- `-d path/to/labels` → writes verbose label names (a "macro-stack" per address) to that file. Combine with `--debug-ops-list LEN` for more trace lines. Read the file to see which macros were on the stack at the last executed addresses — the deepest entry usually points at the macro that ran past where it should have stopped.
-- `-b NAME1 NAME2` → break on labels matching these exact names.
-- `-B NAME` → break on any label whose name contains `NAME`.
+- `-d` / `--debug [PATH]` → keep full debug info (verbose label names — a "macro-stack" per address). When assembling+running in one shot, give NO path and a temp file is used: `fj -d program.fj`. The payoff: failure traces and breakpoints now show full macro-stack names per executed op — the *deepest* entry usually points at the macro that ran past where it should have stopped. (The file itself is for `fj`'s consumption, not for reading; the names appear in `fj`'s own printed trace.) With `--asm`, pass a path (`-d dir/debug.fjd`) to save it for a later `fj --run prog.fjm -d dir/debug.fjd`.
+- `--debug-ops-list LEN` → show the last LEN executed opcodes (instead of 10) when a run fails.
+- `-b NAME [NAME ...]` → pause on labels matching these exact names (needs `-d`).
+- `-B NAME [NAME ...]` → pause on any label whose name contains one of these (needs `-d`).
 
 ## Reading errors
 
